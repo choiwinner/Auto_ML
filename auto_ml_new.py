@@ -30,7 +30,7 @@ with st.sidebar:
     st.title("AutoML_with_pycaret")
     choice = st.radio("Navigation", 
                       ["Upload","Profiling","Data_Preprocessing", "Modelling", 
-                       "Evaluation","Download"])
+                      "Model_Selection","Evaluation","Download"])
     st.info("This project application helps you build and explore your Machine Learning Model.")
 
 if choice == "Upload":
@@ -107,47 +107,85 @@ if choice == "Modelling":
     mdl = st.selectbox('Chose Modelling Type : ',['Classification','Regression'])
     
     if st.button('Run Modelling'):
+
+        with st.spinner('Modelling in progress...'):
         
-        if mdl == 'Classification':
-            st.session_state.Model = cls
-            #from pycaret.classification import setup, compare_models, pull, save_model 
+            if mdl == 'Classification':
+                st.session_state.Model = cls
+                #from pycaret.classification import setup, compare_models, pull, save_model 
 
+
+            elif mdl == 'Regression':
+                st.session_state.Model = reg
+                #from pycaret.regression import setup, compare_models, pull, save_model
+
+            st.info("Your model of choice is " + mdl) 
+
+            st.session_state.Model.setup(st.session_state.X_train, 
+                                         target=st.session_state.y_train)
+            st.session_state.Setup_df = st.session_state.Model.pull()
+            st.dataframe(st.session_state.Setup_df)
+            st.session_state.Model.compare_models()
+            st.session_state.Compare_df = st.session_state.Model.pull()
         
-        elif mdl == 'Regression':
-            st.session_state.Model = reg
-            #from pycaret.regression import setup, compare_models, pull, save_model
+        st.success('Modelling Done!')
 
-        st.info("Your model of choice is " + mdl) 
+if choice == "Model_Selection":
+        
+        st.dataframe(st.session_state.Compare_df)
+        
+        st.session_state.select_model = st.selectbox("Select the best model", st.session_state.Compare_df.index)
 
-        st.session_state.Model.setup(st.session_state.X_train, 
-                                     target=st.session_state.y_train)
-        setup_df = st.session_state.Model.pull()
-        st.dataframe(setup_df)
-        best_model = st.session_state.Model.compare_models()
-        compare_df = st.session_state.Model.pull()
-        st.dataframe(compare_df)
-        st.session_state.best_model = best_model
-        st.session_state.Model.save_model(best_model, 'best_model')
+        # best 모델 선정
+        st.session_state.best_model = st.session_state.Model.create_model(st.session_state.select_model)
+
+        # 모델의 ROC Curves 시각화
+        st.subheader("AUC Curve")
+        img = st.session_state.Model.plot_model(
+            st.session_state.best_model, plot="auc", display_format="streamlit", save=True
+        )
+        st.image(img)
+
+        st.subheader("Confusion Matrix")
+        img2 = st.session_state.Model.plot_model(
+            st.session_state.best_model, plot="confusion_matrix", display_format="streamlit", save=True
+        )
+        st.image(img2)
+
+        st.subheader("Feature Importance")
+        img3 = st.session_state.Model.plot_model(
+            st.session_state.best_model, plot="feature", display_format="streamlit", save=True
+        )
+        st.image(img3)
+        
+        st.session_state.Model.save_model(st.session_state.best_model, 'best_model')
 
 if choice == "Evaluation":
-    y_pred_df = st.session_state.Model.predict_model(st.session_state.best_model, 
-                                                  data=st.session_state.X_test)
-    y_pred_df['y_true'] = st.session_state.y_test
 
-    st.subheader("Predictions and True Values")
-    st.info("Test Data Length: " + str(len(y_pred_df)))
-    st.dataframe(y_pred_df)
+    st.info("Your model of choice is " + st.session_state.select_model)
 
-    st.session_state.y_pred = y_pred_df["prediction_label"]
+    if st.button('Evaluation Start'):
 
-    # classification_report를 딕셔너리 형태로 변환 후 데이터프레임 생성
-    report_dict = classification_report(st.session_state.y_test, st.session_state.y_pred,
-                                        output_dict=True)
-    df = pd.DataFrame(report_dict).transpose()
-
-    # Streamlit에서 출력
-    st.subheader("Classification Report")
-    st.dataframe(df)  # 인터랙티브 테이블 형태로 출력
+        with st.spinner('Evaluation in progress...'):
+        
+            y_pred_df = st.session_state.Model.predict_model(st.session_state.best_model, 
+                                                          data=st.session_state.X_test)
+            y_pred_df['y_true'] = st.session_state.y_test
+    
+            st.subheader("Predictions and True Values")
+            st.info("Test Data Length: " + str(len(y_pred_df)))
+            st.dataframe(y_pred_df)
+    
+            st.session_state.y_pred = y_pred_df["prediction_label"]
+    
+            # classification_report를 딕셔너리 형태로 변환 후 데이터프레임 생성
+            report_dict = classification_report(st.session_state.y_test, st.session_state.y_pred,
+                                                output_dict=True)
+            df = pd.DataFrame(report_dict).transpose()
+    
+            # Streamlit에서 출력
+            st.subheader("Classification Report")
+            st.dataframe(df)  # 인터랙티브 테이블 형태로 출력
         
 if choice == "Download": 
     with open('best_model.pkl', 'rb') as f: 
