@@ -26,7 +26,7 @@ if os.path.exists('./dataset.csv'):
     df = pd.read_csv('dataset.csv', index_col=None)
 
 with st.sidebar: 
-    st.image('https://qtxasset.com/cdn-cgi/image/w=850,h=478,f=auto,fit=crop,g=0.5x0.5/https://qtxasset.com/quartz/qcloud4/media/image/fiercevideo/1554925532/googlecloud.jpg?VersionId=hJC0G.4VGlXbcc35EzyI9RhCJI.mslxN')
+    st.image('mug_obj_202003060908226127.png')
     st.title("AutoML_with_pycaret")
     choice = st.radio("Navigation", 
                       ["Upload","Profiling","Data_Preprocessing", "Modelling", 
