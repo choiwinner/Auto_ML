@@ -10,6 +10,9 @@
 #pip install pydantic-settings
 #pip install --upgrade pandas
 
+# data source 
+# https://www.kaggle.com/datasets/teejmahal20/airline-passenger-satisfaction/data
+
 import streamlit as st
 import pandas as pd
 #import pandas_profiling
